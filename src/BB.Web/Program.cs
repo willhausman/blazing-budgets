@@ -1,10 +1,21 @@
 using BB.Web.Components;
+using Marten;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
+
+builder.Services.AddMarten(options =>
+{
+    options.Connection(builder.Configuration.GetConnectionString("BlazingBudgetsDb")!);
+
+    if (builder.Environment.IsDevelopment())
+    {
+        options.AutoCreateSchemaObjects = Weasel.Core.AutoCreate.All;
+    }
+});
 
 var app = builder.Build();
 

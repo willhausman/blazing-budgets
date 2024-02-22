@@ -1,0 +1,74 @@
+@page "/budgets"
+@using Marten
+@rendermode InteractiveServer
+@inject IDocumentStore store
+
+<PageTitle>Budgets</PageTitle>
+
+<h1>Budgets</h1>
+
+@if (budgets == null)
+{
+    <p><em>Loading...</em></p>
+}
+else
+{
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Id</th>
+                <th>Span</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var budget in budgets)
+            {
+                <tr>
+                    <td>@budget.Id</td>
+                    <td>@budget.Span</td>
+                    <td><button class="btn btn-outline-danger" @onclick="() => Delete(budget)">Remove</button></td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+<button class="btn btn-primary" @onclick="Create">Add new</button>
+
+@code {
+    private IList<Domain.Budgets.Budget> budgets = [];
+
+    protected override async Task OnInitializedAsync()
+    {
+        using var session = store.QuerySession();
+        budgets = (await session.Query<Domain.Budgets.Budget>().ToListAsync()).ToList();
+    }
+
+    private async Task Delete(Domain.Budgets.Budget budget)
+    {
+        using var session = store.LightweightSession();
+
+        session.Delete(budget);
+
+        budgets.Remove(budget);
+        await session.SaveChangesAsync();
+    }
+
+    private async Task Create(MouseEventArgs e)
+    {
+        using var session = store.LightweightSession();
+        var today = DateOnly.FromDateTime(DateTime.Now);
+
+        var budget = new Domain.Budgets.Budget
+        {
+            Span = new(today, today.AddDays(10)),
+        };
+
+        session.Store(budget);
+
+        await session.SaveChangesAsync();
+
+        budgets.Add(budget);
+    }
+}
