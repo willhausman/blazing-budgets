@@ -51,8 +51,9 @@ else
 
         session.Delete(budget);
 
-        budgets.Remove(budget);
         await session.SaveChangesAsync();
+
+        budgets.Remove(budget);
     }
 
     private async Task Create(MouseEventArgs e)
