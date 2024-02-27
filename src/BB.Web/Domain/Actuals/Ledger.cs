@@ -5,7 +5,7 @@ namespace BB.Web.Domain.Actuals;
 public class Ledger
 {
     public required Category Category { get; init; }
-    public required DateSpan DateSpan { get; init; }
+    public required DateSpan Span { get; init; }
     public IList<Transaction> Transactions { get; } = [];
     public Money Balance { get; private set; } = Money.Zero;
 
