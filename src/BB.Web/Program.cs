@@ -1,5 +1,9 @@
 using BB.Web.Components;
+using BB.Web.Domain.Actuals;
 using Marten;
+using Marten.Events;
+using Marten.Events.Daemon.Resiliency;
+using Marten.Events.Projections;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -10,12 +14,17 @@ builder.Services.AddRazorComponents()
 builder.Services.AddMarten(options =>
 {
     options.Connection(builder.Configuration.GetConnectionString("BlazingBudgetsDb")!);
+    options.UseSystemTextJsonForSerialization();
+    options.Projections.Add<LedgerProjection>(ProjectionLifecycle.Inline);
+    options.Events.AddEventType<TransactionPosted>();
+    options.Events.AddEventType<LedgerCreated>();
 
+    options.Events.StreamIdentity = StreamIdentity.AsString;
     if (builder.Environment.IsDevelopment())
     {
         options.AutoCreateSchemaObjects = Weasel.Core.AutoCreate.All;
     }
-});
+}).AddAsyncDaemon(DaemonMode.Solo);
 
 var app = builder.Build();
 

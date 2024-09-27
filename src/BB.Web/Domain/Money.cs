@@ -5,9 +5,9 @@ public record Money(decimal Value)
 {
     public static Money Zero { get; } = new(0);
 
-    public Money Finalize() => new(Value.RoundedToPrecision(2));
+    public Money FinalValue() => new(Value.RoundedToPrecision(2));
 
-    public override string ToString() => $"$ {Finalize().Value:F2}"; // Currency consideration.
+    public override string ToString() => $"$ {FinalValue().Value:F2}"; // Currency consideration.
 
     public int CompareTo(Money? other) => other is null ? 1 : Value.CompareTo(other.Value);
 

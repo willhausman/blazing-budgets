@@ -1,0 +1,64 @@
+@page "/Ledgers"
+@using BB.Web.Domain
+@using BB.Web.Domain.Actuals
+@using Marten
+@inject IDocumentStore Store
+@rendermode InteractiveServer
+
+<PageTitle>Ledgers</PageTitle>
+
+<h1>Ledgers</h1>
+
+@if (ledgers == null)
+{
+    <p><em>Loading...</em></p>
+}
+else
+{
+    <table class="table">
+        <thead>
+        <tr>
+            <th>Id</th>
+            <th>Category</th>
+            <th>Balance</th>
+            <th>Span</th>
+        </tr>
+        </thead>
+        <tbody>
+        @foreach (var ledger in ledgers)
+        {
+            <tr>
+                <td><a href="ledger/@ledger.Id">@ledger.Id</a></td>
+                <td>@ledger.Category</td>
+                <td>@ledger.Balance</td>
+                <td>@ledger.Span</td>
+            </tr>
+        }
+        </tbody>
+    </table>
+}
+
+<button class="btn btn-primary" @onclick="Create">Add new</button>
+
+@code {
+    private IReadOnlyList<Ledger> ledgers = [];
+
+    protected override async Task OnInitializedAsync()
+    {
+        await using var session = Store.QuerySession();
+        ledgers = await session.Query<Ledger>().ToListAsync();
+    }
+
+    private async Task Create()
+    {
+        await using var session = Store.LightweightSession();
+        var today = DateOnly.FromDateTime(DateTime.Now);
+
+        var ledger = new Ledger("Thing 2", new DateSpan(today, today.AddDays(2)), Category.Create("Food", [Category.Create("Testing")]));
+
+        session.Store(ledger);
+
+        await session.SaveChangesAsync();
+        ledgers = [..ledgers, ledger];
+    }
+}

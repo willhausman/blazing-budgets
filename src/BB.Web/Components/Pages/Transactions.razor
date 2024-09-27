@@ -1,0 +1,66 @@
+@page "/Transactions"
+@using BB.Web.Domain
+@using BB.Web.Domain.Actuals
+@using Marten
+@inject IDocumentStore Store
+@rendermode InteractiveServer
+
+<PageTitle>Current Ledger</PageTitle>
+
+<h1>Current Ledger</h1>
+
+@if (ledger == null)
+{
+    <p><em>Loading...</em></p>
+}
+else
+{
+    <div>
+        Total: @ledger.Balance
+    </div>
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Date</th>
+                <th>Category</th>
+                <th>Amount</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var transaction in transactions)
+            {
+                <tr>
+                    <td>@transaction.Date.ToString("O")</td>
+                    <td>@transaction.Category</td>
+                    <td>@transaction.Amount</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+<button class="btn btn-primary" @onclick="Create">Add new</button>
+
+@code {
+    private Ledger? ledger;
+    private IList<Transaction> transactions => ledger?.Transactions ?? [];
+
+    protected override async Task OnInitializedAsync()
+    {
+        await using var session = Store.QuerySession();
+        ledger = await session.LoadAsync<Ledger>("9-23-2024 through 9-30-2024");
+    }
+
+    private async Task Create()
+    {
+        await using var session = Store.LightweightSession();
+        var today = DateOnly.FromDateTime(DateTime.Now);
+
+        var posted = new TransactionPosted(today, new Money(30), Category.Create("Testing"), string.Empty);
+
+        session.Events.Append(today.ToString("O"), posted);
+        
+        await session.SaveChangesAsync();
+        ledger = await session.LoadAsync<Ledger>("9-23-2024 through 9-30-2024");
+    }
+}

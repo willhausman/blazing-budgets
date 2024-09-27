@@ -1,7 +1,9 @@
 @page "/budgets"
+@using BB.Web.Domain
+@using BB.Web.Domain.Actuals
 @using Marten
+@inject IDocumentStore Store
 @rendermode InteractiveServer
-@inject IDocumentStore store
 
 <PageTitle>Budgets</PageTitle>
 
@@ -37,28 +39,28 @@ else
 <button class="btn btn-primary" @onclick="Create">Add new</button>
 
 @code {
-    private IList<Domain.Budgets.Budget> budgets = [];
+    private IList<Domain.Budgets.Budget>? budgets = [];
 
     protected override async Task OnInitializedAsync()
     {
-        using var session = store.QuerySession();
+        await using var session = Store.QuerySession();
         budgets = (await session.Query<Domain.Budgets.Budget>().ToListAsync()).ToList();
     }
 
     private async Task Delete(Domain.Budgets.Budget budget)
     {
-        using var session = store.LightweightSession();
+        await using var session = Store.LightweightSession();
 
         session.Delete(budget);
 
         await session.SaveChangesAsync();
 
-        budgets.Remove(budget);
+        budgets!.Remove(budget);
     }
 
-    private async Task Create(MouseEventArgs e)
+    private async Task Create()
     {
-        using var session = store.LightweightSession();
+        await using var session = Store.LightweightSession();
         var today = DateOnly.FromDateTime(DateTime.Now);
 
         var budget = new Domain.Budgets.Budget
@@ -68,8 +70,12 @@ else
 
         session.Store(budget);
 
-        await session.SaveChangesAsync();
+        var first = DateOnly.FromDateTime(DateTime.Now.AddDays(-3));
+        var last = first.AddDays(7);
+        session.Events.Append(today.ToString("O"), new LedgerCreated(Category.All, new DateSpan(first, last)));
 
-        budgets.Add(budget);
+        await session.SaveChangesAsync();
+        
+        budgets!.Add(budget);
     }
 }

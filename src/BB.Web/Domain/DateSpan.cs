@@ -19,5 +19,10 @@ public record DateSpan
         return date >= From && date <= To;
     }
 
-    public override string ToString() => $"{From.ToShortDateString()} through {To.ToShortDateString()}";
+    public bool Contains(DateOnly date)
+    {
+        return date >= From && date <= To;
+    }
+
+    public override string ToString() => $"{From.ToString("O")} through {To.ToString("O")}";
 }
