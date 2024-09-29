@@ -1,20 +1,24 @@
 using BB.Web.Components;
+using BB.Web.Domain;
 using BB.Web.Domain.Actuals;
 using Marten;
 using Marten.Events;
 using Marten.Events.Daemon.Resiliency;
 using Marten.Events.Projections;
+using MudBlazor.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
+builder.Services.AddMudServices();
 
 builder.Services.AddMarten(options =>
 {
     options.Connection(builder.Configuration.GetConnectionString("BlazingBudgetsDb")!);
     options.UseSystemTextJsonForSerialization();
+    options.Schema.For<Category>().Identity(_ => _.Value);
     options.Projections.Add<LedgerProjection>(ProjectionLifecycle.Inline);
     options.Events.AddEventType<TransactionPosted>();
     options.Events.AddEventType<LedgerCreated>();

@@ -54,7 +54,7 @@ else
         await using var session = Store.LightweightSession();
         var today = DateOnly.FromDateTime(DateTime.Now);
 
-        var ledger = new Ledger("Thing 2", new DateSpan(today, today.AddDays(2)), Category.Create("Food", [Category.Create("Testing")]));
+        var ledger = new Ledger("Thing", new DateSpan(today, today.AddDays(2)), Category.Create("Food", [Category.Create("Groceries"), Category.Create("Dining Out")]));
 
         session.Store(ledger);
 

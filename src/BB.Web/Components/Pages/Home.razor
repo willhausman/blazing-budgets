@@ -1,7 +1,82 @@
 ﻿@page "/"
+@inject IDocumentStore store
+@using BB.Web.Domain
+@using BB.Web.Domain.Actuals
+@using Marten
 
 <PageTitle>Home</PageTitle>
 
-<h1>Hello, world!</h1>
+<h1>Add new</h1>
+<MudNumericField @bind-Value="amount" Label="Amount" HideSpinButtons="true" />
+<MudSelect @bind-Value="category" Label="Category" OpenIcon="@Icons.Material.Filled.Category">
+    @foreach (var selectableCategory in categories) {
+        <MudSelectItem Value="selectableCategory">@selectableCategory</MudSelectItem>
+    }
+</MudSelect>
+<MudDatePicker Label="Transaction Date" @bind-Date="date" ShowToolbar="false" DateFormat="MM-dd-yyyy" />
 
-Welcome to your new app.
+<MudFab Color="Color.Primary" StartIcon="@Icons.Material.Filled.Add" OnClick="CreateTransaction" />
+
+<h3>Recent transactions</h3>
+<MudSimpleTable Hover="true">
+    <thead>
+    <tr>
+        <th>Date</th>
+        <th>Amount</th>
+        <th>Category</th>
+    </tr>
+    </thead>
+    <tbody>
+    @foreach (var tx in recentTransactions)
+    {
+        <tr>
+            <td>@tx.Date.ToString("O")</td>
+            <td>@tx.Amount</td>
+            <td>@tx.Category</td>
+        </tr>
+    }
+    </tbody>
+</MudSimpleTable>
+
+@code {
+
+    private decimal? amount;
+    private DateTime? date = DateTime.Now;
+    private Category? category;
+
+    private IReadOnlyCollection<Category> categories = [];
+    private IReadOnlyCollection<TransactionPosted> recentTransactions = []; 
+
+    protected override async Task OnInitializedAsync()
+    {
+        await using var session = store.LightweightSession();
+        categories = await session.Query<Category>()
+            .Where(x => x.Value != Category.All.Value)
+            .SelectMany(_ => _.SubCategories)
+            .ToListAsync();
+
+        await RefreshRecents(session);
+    }
+
+    private async Task RefreshRecents(IDocumentSession session)
+    {
+        recentTransactions = await session.Events.QueryRawEventDataOnly<TransactionPosted>().OrderByDescending(_ => _.Date).Take(5).ToListAsync();
+    }
+
+    private IEnumerable<Category> Search(string value, CancellationToken token)
+    {
+        return string.IsNullOrEmpty(value)
+            ? categories
+            : categories.Where(_ => _.Value.Contains(value, StringComparison.InvariantCultureIgnoreCase));
+    }
+
+    private async Task CreateTransaction()
+    {
+        await using var session = store.LightweightSession();
+        var dateOnly = DateOnly.FromDateTime(date.Value);
+        session.Events.Append(date.Value.ToString("O"), new TransactionPosted(dateOnly, new Money(amount.Value!), category, string.Empty));
+        await session.SaveChangesAsync();
+        await RefreshRecents(session);
+    }
+
+}
