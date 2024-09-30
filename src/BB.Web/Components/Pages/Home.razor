@@ -3,6 +3,7 @@
 @using BB.Web.Domain
 @using BB.Web.Domain.Actuals
 @using Marten
+@using Marten.Events
 
 <PageTitle>Home</PageTitle>
 
@@ -60,7 +61,13 @@
 
     private async Task RefreshRecents(IDocumentSession session)
     {
-        recentTransactions = await session.Events.QueryRawEventDataOnly<TransactionPosted>().OrderByDescending(_ => _.Date).Take(5).ToListAsync();
+        recentTransactions = (await session.Events.QueryAllRawEvents().Where(_ => _.EventTypesAre(typeof(TransactionPosted)))
+                .OrderByDescending(_ => _.Timestamp)
+                .Take(5)
+                .ToListAsync())
+            .Select(e => (e.Data as TransactionPosted)!)
+            .ToList();
+        // QueryRawEventDataOnly<TransactionPosted>().OrderByDescending(_ => _.Date).Take(5).ToListAsync();
     }
 
     private IEnumerable<Category> Search(string value, CancellationToken token)

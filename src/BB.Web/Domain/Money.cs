@@ -7,7 +7,7 @@ public record Money(decimal Value)
 
     public Money FinalValue() => new(Value.RoundedToPrecision(2));
 
-    public override string ToString() => $"$ {FinalValue().Value:F2}"; // Currency consideration.
+    public override string ToString() => $"{FinalValue().Value:C2}"; // Currency consideration.
 
     public int CompareTo(Money? other) => other is null ? 1 : Value.CompareTo(other.Value);
 
