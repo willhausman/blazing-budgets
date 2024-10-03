@@ -1,7 +1,6 @@
 ﻿@page "/"
 @inject IDbContextFactory<BlazingContext> factory
 @using BB.Web.Domain.Actuals
-@using Marten.Events
 @using Microsoft.EntityFrameworkCore
 
 <PageTitle>Home</PageTitle>
@@ -52,19 +51,12 @@
         await using var context = await factory.CreateDbContextAsync();
         categories = await context.Categories.GetAll().ToListAsync();
 
-        await RefreshRecents(context);
+        await RefreshRecentTransactions(context);
     }
 
-    private async Task RefreshRecents(BlazingContext context)
+    private async Task RefreshRecentTransactions(BlazingContext context)
     {
         recentTransactions = await context.Transactions.OrderByDescending(_ => _.Timestamp).Take(5).ToListAsync();
-    }
-
-    private IEnumerable<Category> Search(string value, CancellationToken token)
-    {
-        return string.IsNullOrEmpty(value)
-            ? categories
-            : categories.Where(_ => _.Value.Contains(value, StringComparison.InvariantCultureIgnoreCase));
     }
 
     private async Task CreateTransaction()
@@ -73,7 +65,7 @@
         var dateOnly = DateOnly.FromDateTime(date!.Value);
         await context.Transactions.AddAsync(Transaction.Create(dateOnly, new(amount!.Value), category!));
         await context.SaveChangesAsync();
-        await RefreshRecents(context);
+        await RefreshRecentTransactions(context);
     }
 
 }
