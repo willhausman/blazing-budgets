@@ -41,13 +41,20 @@ namespace BB.Web.Data.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("p_k_transactions", x => x.id);
+                    table.PrimaryKey("pk_transactions", x => x.id);
                 });
 
             migrationBuilder.CreateIndex(
-                name: "i_x_categories_parent_category",
+                name: "ix_categories_parent_category",
                 table: "categories",
                 column: "parent_category");
+
+            migrationBuilder.AddForeignKey(
+                name: "fk_transaction_category",
+                table: "transactions",
+                column: "category",
+                principalTable: "categories",
+                principalColumn: "category");
         }
 
         /// <inheritdoc />
