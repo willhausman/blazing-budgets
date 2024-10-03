@@ -1,10 +1,12 @@
 using BB.Web.Components;
+using BB.Web.Data;
 using BB.Web.Domain;
 using BB.Web.Domain.Actuals;
 using Marten;
 using Marten.Events;
 using Marten.Events.Daemon.Resiliency;
 using Marten.Events.Projections;
+using Microsoft.EntityFrameworkCore;
 using MudBlazor.Services;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -13,6 +15,9 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
 builder.Services.AddMudServices();
+
+builder.Services.AddDbContextFactory<BlazingContext>(options =>
+    options.UseNpgsql(builder.Configuration.GetConnectionString("BlazingBudgetsDb")));
 
 builder.Services.AddMarten(options =>
 {
