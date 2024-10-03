@@ -35,39 +35,29 @@ namespace BB.Web.Data.Migrations
                     id = table.Column<Guid>(type: "uuid", nullable: false),
                     date = table.Column<DateOnly>(type: "date", nullable: false),
                     amount = table.Column<decimal>(type: "numeric(18,2)", precision: 18, scale: 2, nullable: false),
-                    category = table.Column<string>(type: "character varying(200)", nullable: false),
-                    note = table.Column<string>(type: "text", nullable: true)
+                    category = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: false),
+                    note = table.Column<string>(type: "text", nullable: true),
+                    timestamp = table.Column<DateTimeOffset>(type: "timestamp with time zone", rowVersion: true, nullable: false, defaultValueSql: "CURRENT_TIMESTAMP")
                 },
                 constraints: table =>
                 {
                     table.PrimaryKey("p_k_transactions", x => x.id);
-                    table.ForeignKey(
-                        name: "fk_transaction_category",
-                        column: x => x.category,
-                        principalTable: "categories",
-                        principalColumn: "category",
-                        onDelete: ReferentialAction.Cascade);
                 });
 
             migrationBuilder.CreateIndex(
                 name: "i_x_categories_parent_category",
                 table: "categories",
                 column: "parent_category");
-
-            migrationBuilder.CreateIndex(
-                name: "i_x_transactions_category",
-                table: "transactions",
-                column: "category");
         }
 
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.DropTable(
-                name: "transactions");
+                name: "categories");
 
             migrationBuilder.DropTable(
-                name: "categories");
+                name: "transactions");
         }
     }
 }

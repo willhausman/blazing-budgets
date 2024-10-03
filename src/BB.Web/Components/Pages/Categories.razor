@@ -1,8 +1,7 @@
 @page "/Categories"
-@using BB.Web.Domain
-@using BB.Web.Domain.Actuals
-@using Marten
-@inject IDocumentStore Store
+
+@using Microsoft.EntityFrameworkCore
+@inject IDbContextFactory<BlazingContext> factory
 @rendermode InteractiveServer
 
 <PageTitle>Categories</PageTitle>
@@ -29,39 +28,12 @@
     </tbody>
 </table>
 
-<button class="btn btn-primary" @onclick="Reset">Reset</button>
-
 @code {
-    private IReadOnlyList<Category> categories = [];
+    private List<Category> categories = [];
 
     protected override async Task OnInitializedAsync()
     {
-        await using var session = Store.QuerySession();
-        categories = await session.Query<Category>().ToListAsync();
-    }
-
-    private async Task Reset()
-    {
-        await using var session = Store.LightweightSession();
-        Category[] defaultCategories = [
-            Category.All,
-            Category.Create("Food",
-            [
-                Category.Create("Dining Out"),
-                Category.Create("Groceries"),
-            ]),
-            Category.Create("Cars",
-            [
-                Category.Create("Gas"),
-                Category.Create("Insurance"),
-                Category.Create("Maintenance"),
-            ])
-        ];
-        
-        session.DeleteWhere((Category c) => true);
-        session.Store(defaultCategories);
-
-        await session.SaveChangesAsync();
-        categories = await session.Query<Category>().ToListAsync();
+        await using var context = await factory.CreateDbContextAsync();
+        categories = await context.Categories.GetAll().ToListAsync();
     }
 }

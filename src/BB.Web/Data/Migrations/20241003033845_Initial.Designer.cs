@@ -12,7 +12,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace BB.Web.Data.Migrations
 {
     [DbContext(typeof(BlazingContext))]
-    [Migration("20241003022900_Initial")]
+    [Migration("20241003033845_Initial")]
     partial class Initial
     {
         /// <inheritdoc />
@@ -37,6 +37,12 @@ namespace BB.Web.Data.Migrations
                         .HasColumnType("numeric(18,2)")
                         .HasColumnName("amount");
 
+                    b.Property<string>("Category")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("category");
+
                     b.Property<DateOnly>("Date")
                         .HasColumnType("date")
                         .HasColumnName("date");
@@ -45,16 +51,14 @@ namespace BB.Web.Data.Migrations
                         .HasColumnType("text")
                         .HasColumnName("note");
 
-                    b.Property<string>("category")
-                        .IsRequired()
-                        .HasColumnType("character varying(200)")
-                        .HasColumnName("category");
+                    b.Property<DateTimeOffset>("Timestamp")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("timestamp");
 
                     b.HasKey("Id")
                         .HasName("p_k_transactions");
-
-                    b.HasIndex("category")
-                        .HasDatabaseName("i_x_transactions_category");
 
                     b.ToTable("transactions");
                 });
@@ -77,18 +81,6 @@ namespace BB.Web.Data.Migrations
                         .HasDatabaseName("i_x_categories_parent_category");
 
                     b.ToTable("categories");
-                });
-
-            modelBuilder.Entity("BB.Web.Domain.Actuals.Transaction", b =>
-                {
-                    b.HasOne("BB.Web.Domain.Category", "Category")
-                        .WithMany()
-                        .HasForeignKey("category")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired()
-                        .HasConstraintName("fk_transaction_category");
-
-                    b.Navigation("Category");
                 });
 
             modelBuilder.Entity("BB.Web.Domain.Category", b =>

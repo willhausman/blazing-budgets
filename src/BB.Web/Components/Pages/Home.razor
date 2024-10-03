@@ -1,9 +1,8 @@
 ﻿@page "/"
-@inject IDocumentStore store
-@using BB.Web.Domain
+@inject IDbContextFactory<BlazingContext> factory
 @using BB.Web.Domain.Actuals
-@using Marten
 @using Marten.Events
+@using Microsoft.EntityFrameworkCore
 
 <PageTitle>Home</PageTitle>
 
@@ -45,29 +44,20 @@
     private DateTime? date = DateTime.Now;
     private Category? category;
 
-    private IReadOnlyCollection<Category> categories = [];
-    private IReadOnlyCollection<TransactionPosted> recentTransactions = []; 
+    private ICollection<Category> categories = [];
+    private ICollection<Transaction> recentTransactions = []; 
 
     protected override async Task OnInitializedAsync()
     {
-        await using var session = store.LightweightSession();
-        categories = await session.Query<Category>()
-            .Where(x => x.Value != Category.All.Value)
-            .SelectMany(_ => _.SubCategories)
-            .ToListAsync();
+        await using var context = await factory.CreateDbContextAsync();
+        categories = await context.Categories.GetAll().ToListAsync();
 
-        await RefreshRecents(session);
+        await RefreshRecents(context);
     }
 
-    private async Task RefreshRecents(IDocumentSession session)
+    private async Task RefreshRecents(BlazingContext context)
     {
-        recentTransactions = (await session.Events.QueryAllRawEvents().Where(_ => _.EventTypesAre(typeof(TransactionPosted)))
-                .OrderByDescending(_ => _.Timestamp)
-                .Take(5)
-                .ToListAsync())
-            .Select(e => (e.Data as TransactionPosted)!)
-            .ToList();
-        // QueryRawEventDataOnly<TransactionPosted>().OrderByDescending(_ => _.Date).Take(5).ToListAsync();
+        recentTransactions = await context.Transactions.OrderByDescending(_ => _.Timestamp).Take(5).ToListAsync();
     }
 
     private IEnumerable<Category> Search(string value, CancellationToken token)
@@ -79,11 +69,11 @@
 
     private async Task CreateTransaction()
     {
-        await using var session = store.LightweightSession();
-        var dateOnly = DateOnly.FromDateTime(date.Value);
-        session.Events.Append(date.Value.ToString("O"), new TransactionPosted(dateOnly, new Money(amount.Value!), category, string.Empty));
-        await session.SaveChangesAsync();
-        await RefreshRecents(session);
+        await using var context = await factory.CreateDbContextAsync();
+        var dateOnly = DateOnly.FromDateTime(date!.Value);
+        await context.Transactions.AddAsync(Transaction.Create(dateOnly, new(amount!.Value), category!));
+        await context.SaveChangesAsync();
+        await RefreshRecents(context);
     }
 
 }

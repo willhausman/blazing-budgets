@@ -15,16 +15,17 @@ public class TransactionTypeConfiguration : IEntityTypeConfiguration<Transaction
             .HasPrecision(18, 2)
             .IsRequired();
 
-        builder.HasOne(_ => _.Category)
-            .WithMany()
-            .HasForeignKey("category")
+        builder.Property(_ => _.Category)
+            .HasConversion(t => t.Value, v => new Category(v))
+            .HasColumnName("category")
             .IsRequired()
-            .HasPrincipalKey(_ => _.Value)
-            .HasConstraintName("fk_transaction_category");
+            .HasMaxLength(200);
 
-        builder.Navigation(_ => _.Category).IsRequired().AutoInclude();
-        
         builder.Property(_ => _.Note)
             .IsRequired(false);
+
+        builder.Property(_ => _.Timestamp)
+            .IsRowVersion()
+            .HasColumnType("timestamp with time zone");
     }
 }
